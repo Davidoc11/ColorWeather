@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_blue"
+    tools:context="com.example.david.colorweather.MinutelyWeatherActivity">
+
+    <TextView
+        android:id="@+id/textViewTitleMinutely"
+        style="@style/main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="12dp"
+        android:text="@string/minutely_forecast"
+        android:textStyle="bold" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerViewMinutes"
+        android:layout_width="match_parent"
+        android:padding="5dp"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/textViewTitleMinutely"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        style="@style/main"
+        android:id="@+id/noDataMinute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No hay datos disponibles"
+        android:layout_centerInParent="true"/>
+</RelativeLayout>

@@ -2,13 +2,19 @@ package com.example.david.colorweather;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -43,7 +49,7 @@ import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String CURRENTLY = "currently";
     private static final String DAILY = "daily";
@@ -58,6 +64,9 @@ public class MainActivity extends Activity {
     public static final String DAYS_LIST = "daysList";
     public static final String HOUR_LIST = "hourList";
     public static final String MINUTES_LIST = "minutesList";
+    public static final int MY_PERMISSIONS_ACCESS_COARSE_LOCATION = 0;
+    @BindView(R.id.myLayout)
+    ConstraintLayout myLayout;
     @BindView(R.id.textViewDaily)
     TextView daily;
     @BindView(R.id.textViewMinutely)
@@ -86,42 +95,40 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Snackbar.make(myLayout, "Debes aceptar los permisos", Snackbar.LENGTH_INDEFINITE).setAction("Aceptar", (view) -> {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_ACCESS_COARSE_LOCATION);
+            }).show();
+
+
+            return;
+        } else {
+            FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            // Got last known location. In some rare situations this can be null.
+                            if (location != null) {
+                                Log.d(TAG, "default");
+                                obtenerInfo(location.getLatitude(), location.getLongitude());
+                            }
+                        }
+                    });
+        }
+
+    }
+
+    private void obtenerInfo(Double lat, Double lon) {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "https://api.darksky.net/forecast/088c263283e42b5a07446c7f0bc08787/37.8267,-122.4233?units=si";
+        String url = String.format("https://api.darksky.net/forecast/088c263283e42b5a07446c7f0bc08787/%f,%f?units=si", lat, lon);
 
-
+        Log.d(TAG, "URL : " + url);
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
-
-
-                        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-                        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            // TODO: Consider calling
-                            //    ActivityCompat#requestPermissions
-                            // here to request the missing permissions, and then overriding
-                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                            //                                          int[] grantResults)
-                            // to handle the case where the user grants the permission. See the documentation
-                            // for ActivityCompat#requestPermissions for more details.
-                            Log.d(TAG,"No se ejecuto");
-                            return;
-                        }
-                        Log.d(TAG,"No se ejecuto 2222");
-                        mFusedLocationClient.getLastLocation()
-                                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                                    @Override
-                                    public void onSuccess(Location location) {
-                                        // Got last known location. In some rare situations this can be null.
-                                        if (location != null) {
-                                           Log.d(TAG,location.getLongitude()+"");
-                                           Log.d(TAG,location.getLatitude()+"");
-                                        }
-                                    }
-                                });
-
                         CurrentWeather cw1 = getCurrentWeather(response);
 
 
@@ -144,10 +151,52 @@ public class MainActivity extends Activity {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                }, error -> Toast.makeText(this,"Comprueba tu conexion a internet",Toast.LENGTH_LONG).show());
+                }, error -> Toast.makeText(this, "Comprueba tu conexion a internet", Toast.LENGTH_LONG).show());
 
         queue.add(stringRequest);
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_ACCESS_COARSE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // location-related task you need to do.
+                    if (ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.ACCESS_COARSE_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED) {
+
+                        FusedLocationProviderClient mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+                        mFusedLocationClient.getLastLocation()
+                                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                                    @Override
+                                    public void onSuccess(Location location) {
+                                        // Got last known location. In some rare situations this can be null.
+                                        if (location != null) {
+
+                                            Log.d(TAG, "onRequestPermissions");
+                                            Log.d(TAG, location.getLongitude() + "");
+                                            Log.d(TAG, location.getLatitude() + "");
+                                            obtenerInfo(location.getLatitude(), location.getLongitude());
+                                        }
+                                    }
+                                });
+                    }
+
+                } else {
+
+                }
+                return;
+            }
+
+        }
+    }
+
 
     private View.OnClickListener getOnClickIntent(Class clase, ArrayList parcelable, String pMsg) {
         return (view) -> {
@@ -191,7 +240,7 @@ public class MainActivity extends Activity {
         JSONArray data = daily.getJSONArray(DATA);
         for (int i = 0; i < data.length(); i++) {
             JSONObject day = data.getJSONObject(i);
-            String prob = "Rain Probaility: "+day.getDouble(PRECIPPROBABILITY)*100 + "%";
+            String prob = "Rain Probaility: " + day.getDouble(PRECIPPROBABILITY) * 100 + "%";
             String desc = day.getString(SUMMARY);
             String dayName = dayFormat.format(day.getDouble(TIME) * 1000);
 
@@ -221,20 +270,25 @@ public class MainActivity extends Activity {
     }
 
     private List<Minute> getMinutes(String json) throws JSONException {
-        List<Minute> minutes = new ArrayList<>();
+        List<Minute> minutes = null;
         DateFormat formatMinutes = new SimpleDateFormat("kk:mm", Locale.getDefault());
         JSONObject root = new JSONObject(json);
         formatMinutes.setTimeZone(TimeZone.getTimeZone(root.getString(TIMEZONE)));
-        JSONObject hourly = root.getJSONObject(MINUTELY);
-        JSONArray hourArray = hourly.getJSONArray(DATA);
-        for (int i = 0; i < hourArray.length(); i++) {
-            JSONObject hourObject = hourArray.getJSONObject(i);
-            String minuteTitle = formatMinutes.format(hourObject.getDouble(TIME) * 1000);
-            String desc = "Rain Probaility: "+hourObject.getDouble(PRECIP_PROBABILITY)*100+"%";
+       if (root.has(MINUTELY)){
+           minutes=new ArrayList<>();
+           JSONObject hourly = root.getJSONObject(MINUTELY);
+           Log.d(TAG,""+hourly);
+           JSONArray hourArray = hourly.getJSONArray(DATA);
+           for (int i = 0; i < hourArray.length(); i++) {
+               JSONObject hourObject = hourArray.getJSONObject(i);
+               String minuteTitle = formatMinutes.format(hourObject.getDouble(TIME) * 1000);
+               String desc = "Rain Probaility: " + hourObject.getDouble(PRECIP_PROBABILITY) * 100 + "%";
 
-            Minute minute = new Minute(minuteTitle, desc);
-            minutes.add(minute);
-        }
+               Minute minute = new Minute(minuteTitle, desc);
+               minutes.add(minute);
+           }
+       }
+
         return minutes;
     }
 
